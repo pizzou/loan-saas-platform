@@ -37,6 +37,26 @@ const NAV = [
     ]
   },
   {
+    group: 'Tools',
+    items: [
+      { href: '/dashboard/notifications', label: 'Notifications', icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+      )},
+      { href: '/dashboard/calculator', label: 'Calculator', icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+      )},
+      { href: '/dashboard/ai-analysis', label: 'AI Analysis', icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      )},
+    ]
+  },
+  {
     group: 'Finance',
     items: [
       { href: '/dashboard/payments', label: 'Payments', icon: (
@@ -80,10 +100,10 @@ const NAV = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const pathname  = usePathname();
-  const router    = useRouter();
-  const [user,     setUser]     = useState<AuthResponse | null>(null);
-  const [sideOpen, setSideOpen] = useState(false);
+  const pathname = usePathname();
+  const router   = useRouter();
+  const [user,      setUser]      = useState<AuthResponse | null>(null);
+  const [sideOpen,  setSideOpen]  = useState(false);
 
   useEffect(() => {
     const u = getCurrentUser();
@@ -108,16 +128,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
 
+      {/* Mobile overlay */}
       {sideOpen && (
         <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={() => setSideOpen(false)} />
       )}
 
+      {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-30
         w-64 bg-white border-r border-gray-100 flex flex-col flex-shrink-0
         transition-transform duration-300
         ${sideOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
+        {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100">
           <div className="w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center shadow-sm">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,6 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
+        {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           {NAV.map(section => (
             <div key={section.group} className="mb-6">
@@ -157,6 +181,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
 
+        {/* User footer */}
         <div className="px-3 py-4 border-t border-gray-100">
           <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 transition">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
@@ -177,7 +202,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
+      {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
         <header className="bg-white border-b border-gray-100 px-6 py-3.5 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={() => setSideOpen(!sideOpen)}
@@ -198,6 +225,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           </div>
         </header>
+
         <main className="flex-1 overflow-y-auto px-6 py-6">{children}</main>
       </div>
     </div>

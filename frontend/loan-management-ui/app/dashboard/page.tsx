@@ -130,6 +130,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 max-w-7xl">
 
+      {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">
@@ -151,6 +152,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Overdue alert */}
       {(stats?.overduePayments ?? 0) > 0 && (
         <div className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-2xl px-5 py-3.5">
           <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -168,20 +170,29 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Main grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        {/* Left: KPIs + Charts */}
         <div className="xl:col-span-2 space-y-6">
+
+          {/* KPI row 1 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <KpiCard label="Borrowers"    value={String(stats?.totalBorrowers  ?? 0)} color="text-blue-600"   trend="up" />
-            <KpiCard label="Active Loans" value={String(stats?.activeLoans     ?? 0)} color="text-green-600"  trend="up" />
-            <KpiCard label="Pending"      value={String(stats?.pendingLoans    ?? 0)} color="text-yellow-600" trend="neutral" />
-            <KpiCard label="Overdue"      value={String(stats?.overduePayments ?? 0)} color="text-red-600"    trend={stats?.overduePayments ? 'down' : 'neutral'} />
+            <KpiCard label="Borrowers"  value={String(stats?.totalBorrowers  ?? 0)} color="text-blue-600"   trend="up" />
+            <KpiCard label="Active Loans"    value={String(stats?.activeLoans     ?? 0)} color="text-green-600"  trend="up" />
+            <KpiCard label="Pending"    value={String(stats?.pendingLoans    ?? 0)} color="text-yellow-600" trend="neutral" />
+            <KpiCard label="Overdue"    value={String(stats?.overduePayments ?? 0)} color="text-red-600"    trend={stats?.overduePayments ? 'down' : 'neutral'} />
           </div>
+
+          {/* KPI row 2 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <KpiCard label="Disbursed" value={fmt(stats?.totalAmountLent)}    color="text-indigo-600" sub="Total approved" />
-            <KpiCard label="Collected" value={fmt(stats?.paymentsCollected)}  color="text-green-600"  sub={collRate + ' rate'} />
-            <KpiCard label="Penalties" value={fmt(stats?.penaltiesCollected)} color="text-orange-500" sub="Late fees" />
-            <KpiCard label="Closed"    value={String(stats?.closedLoans ?? 0)} color="text-gray-700"  sub="Fully repaid" />
+            <KpiCard label="Disbursed"  value={fmt(stats?.totalAmountLent)}    color="text-indigo-600" sub="Total approved" />
+            <KpiCard label="Collected"  value={fmt(stats?.paymentsCollected)}  color="text-green-600"  sub={collRate + ' rate'} />
+            <KpiCard label="Penalties"  value={fmt(stats?.penaltiesCollected)} color="text-orange-500" sub="Late fees" />
+            <KpiCard label="Closed"     value={String(stats?.closedLoans ?? 0)} color="text-gray-700"  sub="Fully repaid" />
           </div>
+
+          {/* Charts */}
           {(loanChart.length > 0 || collectChart.length > 0) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {loanChart.length > 0 && (
@@ -194,17 +205,20 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Right: AI Insights */}
         <div className="space-y-4">
           <AiInsightCard stats={stats} loans={loans} />
+
+          {/* Quick actions */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <h2 className="font-semibold text-gray-800 text-sm mb-4">Quick Actions</h2>
             <div className="space-y-2">
               {[
-                { href: '/dashboard/borrowers/new', label: 'Register new borrower',    icon: '👤' },
-                { href: '/dashboard/loans/new',     label: 'Create loan application',  icon: '📋' },
+                { href: '/dashboard/borrowers/new', label: 'Register new borrower', icon: '👤' },
+                { href: '/dashboard/loans/new',     label: 'Create loan application', icon: '📋' },
                 { href: '/dashboard/approvals',     label: 'Review pending approvals', icon: '✅', badge: stats?.pendingLoans },
-                { href: '/dashboard/payments',      label: 'Record payment',           icon: '💳' },
-                { href: '/dashboard/reports',       label: 'View portfolio report',    icon: '📊' },
+                { href: '/dashboard/payments',      label: 'Record payment', icon: '💳' },
+                { href: '/dashboard/reports',       label: 'View portfolio report', icon: '📊' },
               ].map(action => (
                 <Link key={action.href} href={action.href}
                   className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 transition group">
@@ -226,6 +240,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Recent loans */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="font-semibold text-gray-800 text-sm">Recent Loans</h2>

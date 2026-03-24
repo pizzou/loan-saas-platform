@@ -100,7 +100,10 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     entity_name VARCHAR(255),
     entity_id   BIGINT,
     user_id     BIGINT REFERENCES app_users(id),
-    timestamp   TIMESTAMP DEFAULT NOW()
+    timestamp   TIMESTAMP DEFAULT NOW(),
+    details     TEXT,
+    ip_address  VARCHAR(255),
+    user_agent  VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (

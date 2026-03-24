@@ -61,19 +61,21 @@ CREATE TABLE IF NOT EXISTS loans (
 );
 
 CREATE TABLE IF NOT EXISTS payments (
-    id                  BIGSERIAL PRIMARY KEY,
-    amount              DOUBLE PRECISION,
-    penalty             DOUBLE PRECISION DEFAULT 0,
-    due_date            DATE,
-    paid_date           DATE,
-    paid                BOOLEAN DEFAULT FALSE,
-    payment_method      VARCHAR(100),
-    transaction_id      VARCHAR(255),
-    installment_number  INTEGER,
-    loan_id             BIGINT REFERENCES loans(id),
-    organization_id     BIGINT REFERENCES organizations(id),
-    created_at          TIMESTAMP DEFAULT NOW()
+    id                 BIGSERIAL PRIMARY KEY,
+    amount             DOUBLE PRECISION NOT NULL,        -- full installment amount
+    paid_amount        DOUBLE PRECISION DEFAULT 0,       -- amount actually paid so far
+    penalty            DOUBLE PRECISION DEFAULT 0,       -- overdue penalty
+    due_date           DATE NOT NULL,
+    paid_date          DATE,                             
+    paid               BOOLEAN DEFAULT FALSE,
+    payment_method     VARCHAR(100),
+    transaction_id     VARCHAR(255),
+    installment_number INTEGER,
+    loan_id            BIGINT REFERENCES loans(id),
+    organization_id    BIGINT REFERENCES organizations(id),
+    created_at         TIMESTAMP DEFAULT NOW()
 );
+
 
 CREATE TABLE IF NOT EXISTS borrower_files (
     id          BIGSERIAL PRIMARY KEY,

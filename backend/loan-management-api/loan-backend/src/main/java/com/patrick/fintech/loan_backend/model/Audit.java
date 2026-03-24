@@ -2,6 +2,8 @@ package com.patrick.fintech.loan_backend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+
 import java.time.OffsetDateTime;
 
 @Entity

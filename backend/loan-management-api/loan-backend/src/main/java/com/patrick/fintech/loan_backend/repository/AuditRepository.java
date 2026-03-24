@@ -7,5 +7,8 @@ import java.util.List;
 
 @Repository
 public interface AuditRepository extends JpaRepository<Audit, Long> {
+
     List<Audit> findByOrderByTimestampDesc();
+
+    List<Audit> findByUser_Organization_IdOrderByTimestampDesc(Long orgId);
 }

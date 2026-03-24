@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Audit {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -17,9 +18,21 @@ public class Audit {
     private String action;
     private String entityName;
     private Long entityId;
+
     private LocalDateTime timestamp;
 
-    @ManyToOne
+    private String ipAddress;
+    private String userAgent;
+
+    @Column(length = 1000)
+    private String details;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @PrePersist
+    public void prePersist() {
+        this.timestamp = LocalDateTime.now();
+    }
 }

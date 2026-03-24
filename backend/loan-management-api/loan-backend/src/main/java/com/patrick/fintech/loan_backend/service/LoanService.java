@@ -1,5 +1,6 @@
 package com.patrick.fintech.loan_backend.service;
 
+import com.patrick.fintech.loan_backend.audit.Auditable;
 import com.patrick.fintech.loan_backend.dto.LoanRequest;
 import com.patrick.fintech.loan_backend.dto.RiskScoreResponse;
 import com.patrick.fintech.loan_backend.model.*;
@@ -30,6 +31,7 @@ public class LoanService {
         this.notificationService    = notifService;
     }
 
+    @Auditable(action = "CREATE", entity = "Loan")
     @Transactional
     public Loan createLoan(LoanRequest req, Long organizationId) {
         Organization org = organizationRepository.findById(organizationId)
@@ -51,12 +53,14 @@ public class LoanService {
         loan.setStatus(LoanStatus.PENDING);
 
         Loan saved = loanRepository.save(loan);
+
         try {
             RiskScoreResponse risk = riskScoringService.score(saved);
             saved.setRiskScore(risk.getScore());
             saved.setRiskCategory(risk.getCategory());
             loanRepository.save(saved);
         } catch (Exception ignored) {}
+
         return saved;
     }
 
@@ -74,33 +78,40 @@ public class LoanService {
     }
 
     public Loan getLoanByIdForOrg(Long id, Long orgId) {
-    Loan loan = getLoanById(id);
-    if (!loan.getOrganization().getId().equals(orgId))
-        throw new RuntimeException("Loan not found: " + id);
-    return loan;
-}
+        Loan loan = getLoanById(id);
+        if (!loan.getOrganization().getId().equals(orgId))
+            throw new RuntimeException("Loan not found: " + id);
+        return loan;
+    }
 
+    @Auditable(action = "APPROVE", entity = "Loan")
     @Transactional
     public Loan approveLoan(Long loanId, User approvedBy) {
         Loan loan = getLoanById(loanId);
         if (loan.getStatus() == LoanStatus.APPROVED) throw new RuntimeException("Already approved");
         if (loan.getStatus() == LoanStatus.REJECTED)  throw new RuntimeException("Cannot approve rejected loan");
+
         loan.setStatus(LoanStatus.APPROVED);
         loan.setApprovedBy(approvedBy);
         loan.setApprovedAt(LocalDate.now());
         Loan saved = loanRepository.save(loan);
+
         generateRepaymentSchedule(saved);
+
         try { notificationService.sendLoanApproved(saved); } catch (Exception ignored) {}
         return saved;
     }
 
+    @Auditable(action = "REJECT", entity = "Loan")
     @Transactional
     public Loan rejectLoan(Long loanId, String reason) {
         Loan loan = getLoanById(loanId);
         if (loan.getStatus() == LoanStatus.APPROVED) throw new RuntimeException("Cannot reject approved loan");
+
         loan.setStatus(LoanStatus.REJECTED);
         if (reason != null) loan.setRejectionReason(reason);
         Loan saved = loanRepository.save(loan);
+
         try { notificationService.sendLoanRejected(saved); } catch (Exception ignored) {}
         return saved;
     }
@@ -113,6 +124,7 @@ public class LoanService {
         double installment  = total / duration;
         LocalDate dueDate   = (loan.getStartDate() != null
             ? loan.getStartDate() : LocalDate.now()).plusMonths(1);
+
         for (int i = 1; i <= duration; i++) {
             Payment p = new Payment();
             p.setLoan(loan); p.setOrganization(loan.getOrganization());

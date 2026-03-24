@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -23,6 +24,12 @@ public class AuditService {
     public List<Audit> getByOrg(Long orgId) {
         return auditRepository.findByUser_Organization_IdOrderByTimestampDesc(orgId);
     }
+
+    public Audit logAction(Audit audit) {
+    audit.setTimestamp(LocalDateTime.now());
+    return auditRepository.save(audit);
+}
+
 
     public void log(String action, String entityName, Long entityId, User user) {
         try {

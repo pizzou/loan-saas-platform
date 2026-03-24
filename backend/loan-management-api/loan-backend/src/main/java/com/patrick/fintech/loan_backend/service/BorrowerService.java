@@ -1,5 +1,6 @@
 package com.patrick.fintech.loan_backend.service;
 
+import com.patrick.fintech.loan_backend.audit.Auditable;
 import com.patrick.fintech.loan_backend.model.Borrower;
 import com.patrick.fintech.loan_backend.model.Organization;
 import com.patrick.fintech.loan_backend.repository.BorrowerRepository;
@@ -18,6 +19,7 @@ public class BorrowerService {
         this.orgRepo = orgRepo;
     }
 
+    @Auditable(action = "CREATE", entity = "Borrower")
     public Borrower create(Borrower borrower, Long orgId) {
         Organization org = orgRepo.findById(orgId)
             .orElseThrow(() -> new RuntimeException("Organization not found: " + orgId));
@@ -46,6 +48,7 @@ public class BorrowerService {
         return repo.save(borrower);
     }
 
+    @Auditable(action = "UPDATE", entity = "Borrower")
     public Borrower update(Long id, Borrower updated) {
         Borrower b     = getById(id);
         Long     orgId = b.getOrganization().getId();

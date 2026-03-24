@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDate;
 
 @Entity
@@ -22,8 +21,8 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double amount;           // full installment amount
-    private Double paidAmount = 0.0; // amount actually paid so far
+    private Double amount;            // full installment amount
+    private Double paidAmount = 0.0;  // amount actually paid so far
     private Double penalty = 0.0;
 
     private LocalDate dueDate;
@@ -45,13 +44,11 @@ public class Payment {
     @JsonIgnore
     private Organization organization;
 
-    /**
-     * Record a payment of any amount
-     */
-    public void recordPayment(Double payment) {
-        if (payment == null || payment <= 0) return;
+    // Record partial or full payment
+    public void recordPayment(Double paymentAmount) {
+        if (paymentAmount == null || paymentAmount <= 0) return;
 
-        this.paidAmount += payment;
+        this.paidAmount += paymentAmount;
 
         // Mark as paid if total paid covers installment + penalty
         if (this.paidAmount >= (this.amount + this.penalty)) {
@@ -60,19 +57,14 @@ public class Payment {
         }
     }
 
-    /**
-     * Remaining amount to be paid including penalty
-     */
-    public Double getRemaining() {
-        return Math.max((amount + penalty) - paidAmount, 0.0);
+    // Remaining amount including penalty
+    public Double remaining() {
+        return Math.max((amount + penalty) - paidAmount, 0);
     }
 
-    /**
-     * Calculate penalty for overdue payments
-     * Example: 1% per day late
-     */
+    // Calculate penalty for overdue payments (example: 1% per day late)
     public void calculatePenalty() {
-        if (dueDate != null && dueDate.isBefore(LocalDate.now()) && !paid) {
+        if (dueDate.isBefore(LocalDate.now()) && !paid) {
             long daysLate = java.time.temporal.ChronoUnit.DAYS.between(dueDate, LocalDate.now());
             this.penalty = amount * 0.01 * daysLate;
         }

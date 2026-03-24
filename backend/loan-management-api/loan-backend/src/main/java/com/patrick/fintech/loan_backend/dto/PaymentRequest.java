@@ -1,19 +1,15 @@
 package com.patrick.fintech.loan_backend.dto;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import jakarta.validation.constraints.NotNull;
 
 @Data
 public class PaymentRequest {
-
     @NotNull
-    @DecimalMin("0.01")
     private Double amount;
 
-    @NotBlank
-    private String paymentMethod;  // CASH, CARD, MOBILE_MONEY, BANK_TRANSFER
+    @NotNull
+    private String paymentMethod;
 
-    private String transactionId;  // optional reference number
+    private String transactionId;
 }

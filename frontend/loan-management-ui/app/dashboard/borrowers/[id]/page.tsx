@@ -22,10 +22,12 @@ export default function BorrowerDetailPage() {
   const [editing,   setEditing]   = useState(false);
   const [saving,    setSaving]    = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [editFirst, setEditFirst] = useState('');
-  const [editLast,  setEditLast]  = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [editAddr,  setEditAddr]  = useState('');
+  const [editFirst,  setEditFirst]  = useState('');
+  const [editLast,   setEditLast]   = useState('');
+  const [editPhone,  setEditPhone]  = useState('');
+  const [editAddr,   setEditAddr]   = useState('');
+  const [editKyc,    setEditKyc]    = useState('');
+  const [updatingKyc, setUpdatingKyc] = useState(false);
 
   const getMsg = (err: unknown) =>
     err instanceof Error ? err.message : 'Something went wrong';
@@ -39,10 +41,11 @@ export default function BorrowerDetailPage() {
     setBorrower(b);
     setLoans(l);
     setFiles(f);
-    setEditFirst(b.firstName ?? '');
-    setEditLast(b.lastName   ?? '');
-    setEditPhone(b.phone     ?? '');
-    setEditAddr(b.address    ?? '');
+    setEditFirst(b.firstName  ?? '');
+    setEditLast(b.lastName    ?? '');
+    setEditPhone(b.phone      ?? '');
+    setEditAddr(b.address     ?? '');
+    setEditKyc(b.kycStatus    ?? 'PENDING');
   }, [id]);
 
   useEffect(() => {
@@ -65,6 +68,20 @@ export default function BorrowerDetailPage() {
       toast('error', getMsg(err));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleKycUpdate = async (status: string) => {
+    setUpdatingKyc(true);
+    try {
+      await updateBorrower(Number(id), { kycStatus: status });
+      toast('success', 'KYC status updated to ' + status);
+      setEditKyc(status);
+      await load();
+    } catch (err: unknown) {
+      toast('error', getMsg(err));
+    } finally {
+      setUpdatingKyc(false);
     }
   };
 
@@ -149,9 +166,7 @@ export default function BorrowerDetailPage() {
           <div className="mt-5 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  First Name
-                </label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">First Name</label>
                 <input
                   value={editFirst}
                   onChange={e => setEditFirst(e.target.value)}
@@ -160,9 +175,7 @@ export default function BorrowerDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  Last Name
-                </label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Last Name</label>
                 <input
                   value={editLast}
                   onChange={e => setEditLast(e.target.value)}
@@ -170,9 +183,7 @@ export default function BorrowerDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  Phone
-                </label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Phone</label>
                 <input
                   value={editPhone}
                   onChange={e => setEditPhone(e.target.value)}
@@ -180,9 +191,7 @@ export default function BorrowerDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
-                  Address
-                </label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Address</label>
                 <input
                   value={editAddr}
                   onChange={e => setEditAddr(e.target.value)}
@@ -223,6 +232,36 @@ export default function BorrowerDetailPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* KYC Status Update */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 className="font-semibold text-gray-800 text-sm mb-4">KYC Verification</h2>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex-1">
+            <p className="text-xs text-gray-500 mb-2">Current Status</p>
+            <KycBadge status={borrower.kycStatus} />
+          </div>
+          <div className="flex gap-2">
+            {['PENDING', 'VERIFIED', 'REJECTED'].map(status => (
+              <button
+                key={status}
+                onClick={() => handleKycUpdate(status)}
+                disabled={updatingKyc || borrower.kycStatus === status}
+                className={
+                  'px-4 py-2 rounded-lg text-xs font-medium transition disabled:opacity-50 ' +
+                  (status === 'VERIFIED'
+                    ? 'bg-green-600 hover:bg-green-700 text-white disabled:bg-green-300'
+                    : status === 'REJECTED'
+                    ? 'bg-red-600 hover:bg-red-700 text-white disabled:bg-red-300'
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700')
+                }
+              >
+                {updatingKyc && editKyc === status ? 'Updating...' : status}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">

@@ -1,15 +1,35 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { getAllPayments, getOverduePayments } from '../../../services/paymentService';
+import { getAllPayments, getOverduePayments, makePayment } from '../../../services/paymentService';
 import { Payment } from '../../../types/index';
 import { PageSpinner } from '../../../components/ui/Skeleton';
+import { toast } from '../../../hooks/useToast';
 
 type F = 'all' | 'paid' | 'pending' | 'overdue';
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [filter,   setFilter]   = useState<F>('all');
+  const [payments,  setPayments]  = useState<Payment[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [filter,    setFilter]    = useState<F>('all');
+  const [payingId,  setPayingId]  = useState<number | null>(null);
+  const [payMethod, setPayMethod] = useState('MOBILE_MONEY');
+  const [txId,      setTxId]      = useState('');
+  const [busy,      setBusy]      = useState(false);
+
+  const getMsg = (err: unknown) => err instanceof Error ? err.message : 'Something went wrong';
+
+  const handlePay = async (p: Payment) => {
+    setBusy(true);
+    try {
+      await makePayment(p.id, p.amount ?? 0, payMethod, txId || undefined);
+      toast('success', 'Payment #' + p.installmentNumber + ' recorded!');
+      setPayingId(null); setTxId('');
+      const data = filter === 'overdue' ? await getOverduePayments() : await getAllPayments();
+      setPayments(data);
+    } catch (err: unknown) {
+      toast('error', getMsg(err));
+    } finally { setBusy(false); }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -58,14 +78,14 @@ export default function PaymentsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
               <tr>
-                {['#','Amount','Penalty','Due Date','Paid Date','Method','Status'].map((h) => (
+                {['#','Amount','Penalty','Due Date','Paid Date','Method','Status','Action'].map((h) => (
                   <th key={h} className="px-5 py-3 text-left font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {visible.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-10 text-gray-400 text-sm">No payments found</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-gray-400 text-sm">No payments found</td></tr>
               )}
               {visible.map((p) => {
                 const isOverdue = !p.paid && new Date(p.dueDate) < now;
@@ -86,6 +106,36 @@ export default function PaymentsPage() {
                         ? <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-medium">Overdue</span>
                         : <span className="bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full text-xs font-medium">Pending</span>
                       }
+                    </td>
+                    <td className="px-5 py-3">
+                      {!p.paid && (
+                        payingId === p.id ? (
+                          <div className="flex flex-col gap-2 min-w-[180px]">
+                            <select value={payMethod} onChange={e => setPayMethod(e.target.value)}
+                              className="border border-gray-300 rounded px-2 py-1 text-xs">
+                              {['MOBILE_MONEY','BANK_TRANSFER','CASH','CARD'].map(m => (
+                                <option key={m} value={m}>{m.replace('_',' ')}</option>
+                              ))}
+                            </select>
+                            <input value={txId} onChange={e => setTxId(e.target.value)}
+                              placeholder="Transaction ID (optional)"
+                              className="border border-gray-300 rounded px-2 py-1 text-xs" />
+                            <div className="flex gap-1">
+                              <button onClick={() => handlePay(p)} disabled={busy}
+                                className="bg-green-600 text-white px-3 py-1 rounded text-xs font-medium disabled:opacity-60">
+                                {busy ? '...' : 'Confirm'}
+                              </button>
+                              <button onClick={() => { setPayingId(null); setTxId(''); }}
+                                className="text-gray-400 text-xs px-2">Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button onClick={() => { setPayingId(p.id); setTxId(''); }}
+                            className="text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded text-xs font-medium transition">
+                            Record
+                          </button>
+                        )
+                      )}
                     </td>
                   </tr>
                 );

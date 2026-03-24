@@ -6,25 +6,42 @@ import { hasRole } from '../../../services/authService';
 import { PageSpinner } from '../../../components/ui/Skeleton';
 
 interface UserRow {
-  id: number;
-  name: string;
-  email: string;
+  id: number; name: string; email: string;
   role?: { id: number; name: string };
   organization?: { id: number; name: string };
 }
 
-const ROLE_BADGE: Record<string, string> = {
-  ADMIN:        'bg-purple-100 text-purple-700',
+const ROLE_COLOR: Record<string, string> = {
+  ADMIN: 'bg-purple-100 text-purple-700',
   LOAN_OFFICER: 'bg-blue-100 text-blue-700',
-  MANAGER:      'bg-green-100 text-green-700',
-  ACCOUNTANT:   'bg-orange-100 text-orange-700',
+  MANAGER: 'bg-green-100 text-green-700',
+  ACCOUNTANT: 'bg-orange-100 text-orange-700',
 };
-
 const ROLES = ['ADMIN', 'MANAGER', 'LOAN_OFFICER', 'ACCOUNTANT'];
 
-function inputCls(err?: string) {
-  return 'w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ' +
-    (err ? 'border-red-400 focus:ring-red-400 bg-red-50' : 'border-gray-300 focus:ring-blue-500');
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-semibold text-gray-900">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Input({ label, error, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+      <input {...props} className={'w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 transition ' +
+        (error ? 'border-red-300 focus:ring-red-400 bg-red-50' : 'border-gray-200 focus:ring-green-400')} />
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    </div>
+  );
 }
 
 export default function UsersPage() {
@@ -35,12 +52,12 @@ export default function UsersPage() {
   const [resetUserId, setResetUserId] = useState<number | null>(null);
   const [delUserId,   setDelUserId]   = useState<number | null>(null);
 
-  const [name,      setName]      = useState('');
-  const [email,     setEmail]     = useState('');
-  const [password,  setPassword]  = useState('');
-  const [role,      setRole]      = useState('LOAN_OFFICER');
-  const [saving,    setSaving]    = useState(false);
-  const [errors,    setErrors]    = useState<Record<string, string>>({});
+  const [name,     setName]     = useState('');
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
+  const [role,     setRole]     = useState('LOAN_OFFICER');
+  const [saving,   setSaving]   = useState(false);
+  const [errors,   setErrors]   = useState<Record<string, string>>({});
 
   const [newPw,     setNewPw]     = useState('');
   const [cfPw,      setCfPw]      = useState('');
@@ -50,21 +67,16 @@ export default function UsersPage() {
 
   const load = () => {
     setLoading(true);
-    get('/users')
-      .then(d => setUsers(d as UserRow[]))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    get('/users').then(d => setUsers(d as UserRow[])).catch(console.error).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!name.trim()) e.name = 'Name is required';
+    if (!name.trim())  e.name  = 'Name is required';
     if (!email.trim()) e.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Invalid email';
-    if (!password) e.password = 'Password is required';
-    else if (password.length < 6) e.password = 'Min 6 characters';
+    if (!password || password.length < 8) e.password = 'Password must be at least 8 characters';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -74,28 +86,25 @@ export default function UsersPage() {
     if (!validate()) return;
     setSaving(true);
     try {
-      await post('/users', { name, email, password, role });
+      await post('/users', { name: name.trim(), email: email.trim(), password, roleName: role });
       toast('success', name + ' created successfully');
       setName(''); setEmail(''); setPassword(''); setRole('LOAN_OFFICER');
-      setShowCreate(false);
-      load();
-    } catch (err: unknown) {
-      toast('error', getMsg(err));
-    } finally { setSaving(false); }
+      setShowCreate(false); load();
+    } catch (err: unknown) { toast('error', getMsg(err)); }
+    finally { setSaving(false); }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPw || newPw.length < 6) { toast('error', 'Min 6 characters'); return; }
+  const handleResetPassword = async () => {
+    if (!resetUserId) return;
     if (newPw !== cfPw) { toast('error', 'Passwords do not match'); return; }
+    if (newPw.length < 8) { toast('error', 'Password must be at least 8 characters'); return; }
     setResetting(true);
     try {
       await post('/users/' + resetUserId + '/reset-password', { newPassword: newPw });
       toast('success', 'Password reset successfully');
       setResetUserId(null); setNewPw(''); setCfPw('');
-    } catch (err: unknown) {
-      toast('error', getMsg(err));
-    } finally { setResetting(false); }
+    } catch (err: unknown) { toast('error', getMsg(err)); }
+    finally { setResetting(false); }
   };
 
   const handleDelete = async () => {
@@ -103,11 +112,8 @@ export default function UsersPage() {
     try {
       await del('/users/' + delUserId);
       toast('success', 'User deleted');
-      setDelUserId(null);
-      load();
-    } catch (err: unknown) {
-      toast('error', getMsg(err));
-    }
+      setDelUserId(null); load();
+    } catch (err: unknown) { toast('error', getMsg(err)); }
   };
 
   return (
@@ -118,61 +124,56 @@ export default function UsersPage() {
           <p className="text-sm text-gray-500">{users.length} team members</p>
         </div>
         {isAdmin && (
-          <button
-            onClick={() => setShowCreate(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-          >
+          <button onClick={() => setShowCreate(true)}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition">
             + Add User
           </button>
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         {loading ? <PageSpinner /> : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+            <thead className="bg-gray-50">
               <tr>
-                {['User', 'Email', 'Role', 'Organization', isAdmin ? 'Actions' : '']
-                  .filter(Boolean).map(h => (
-                  <th key={h} className="px-5 py-3 text-left font-medium">{h}</th>
+                {['User', 'Email', 'Role', 'Organization', isAdmin ? 'Actions' : ''].filter(Boolean).map(h => (
+                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-50">
               {users.length === 0 && (
-                <tr><td colSpan={5} className="text-center py-10 text-gray-400 text-sm">No users found</td></tr>
+                <tr><td colSpan={5} className="text-center py-12 text-gray-400">
+                  <p className="text-2xl mb-2">👤</p>
+                  <p className="text-sm">No users found</p>
+                </td></tr>
               )}
               {users.map(u => (
-                <tr key={u.id} className="hover:bg-gray-50">
+                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                        {u.name?.[0]?.toUpperCase() ?? '?'}
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        {u.name?.[0]?.toUpperCase()}
                       </div>
-                      <span className="font-medium text-gray-800">{u.name ?? '—'}</span>
+                      <span className="font-medium text-gray-900">{u.name}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-gray-500">{u.email}</td>
+                  <td className="px-5 py-4 text-gray-500 text-xs">{u.email}</td>
                   <td className="px-5 py-4">
-                    <span className={'px-2.5 py-1 rounded-full text-xs font-medium ' +
-                      (ROLE_BADGE[u.role?.name ?? ''] ?? 'bg-gray-100 text-gray-600')}>
-                      {u.role?.name ?? '—'}
+                    <span className={'px-2.5 py-1 rounded-full text-xs font-semibold ' + (ROLE_COLOR[u.role?.name ?? ''] ?? 'bg-gray-100 text-gray-600')}>
+                      {u.role?.name?.replace('_', ' ') ?? '—'}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-gray-500">{u.organization?.name ?? '—'}</td>
+                  <td className="px-5 py-4 text-gray-500 text-xs">{u.organization?.name ?? '—'}</td>
                   {isAdmin && (
                     <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => { setResetUserId(u.id); setNewPw(''); setCfPw(''); }}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition"
-                        >
+                      <div className="flex gap-2">
+                        <button onClick={() => { setResetUserId(u.id); setNewPw(''); setCfPw(''); }}
+                          className="text-xs text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">
                           Reset PW
                         </button>
-                        <button
-                          onClick={() => setDelUserId(u.id)}
-                          className="text-xs text-red-500 hover:text-red-700 font-medium border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition"
-                        >
+                        <button onClick={() => setDelUserId(u.id)}
+                          className="text-xs text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition">
                           Delete
                         </button>
                       </div>
@@ -185,112 +186,71 @@ export default function UsersPage() {
         )}
       </div>
 
+      {/* Create user modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-800">Add New User</h2>
-              <button onClick={() => setShowCreate(false)}
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none">x</button>
+        <Modal title="Add New User" onClose={() => setShowCreate(false)}>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <Input label="Full Name" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" error={errors.name} />
+            <Input label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="john@company.com" error={errors.email} />
+            <Input label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 8 characters" error={errors.password} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
+              <select value={role} onChange={e => setRole(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+                {ROLES.map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+              </select>
             </div>
-            <form onSubmit={handleCreate} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                <input value={name} onChange={e => setName(e.target.value)}
-                  placeholder="John Doe" className={inputCls(errors.name)} />
-                {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="john@company.com" className={inputCls(errors.email)} />
-                {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="Min 6 characters" className={inputCls(errors.password)} />
-                {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
-                <select value={role} onChange={e => setRole(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  {ROLES.map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
-                </select>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={saving}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition">
-                  {saving ? 'Creating...' : 'Create User'}
-                </button>
-                <button type="button" onClick={() => setShowCreate(false)}
-                  className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2.5 rounded-lg text-sm font-medium transition">
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {resetUserId !== null && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-800">Reset Password</h2>
-              <button onClick={() => setResetUserId(null)}
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none">x</button>
-            </div>
-            <form onSubmit={handleResetPassword} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)}
-                  placeholder="Min 6 characters" className={inputCls()} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                <input type="password" value={cfPw} onChange={e => setCfPw(e.target.value)}
-                  placeholder="Repeat password" className={inputCls()} />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={resetting}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition">
-                  {resetting ? 'Resetting...' : 'Reset Password'}
-                </button>
-                <button type="button" onClick={() => setResetUserId(null)}
-                  className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2.5 rounded-lg text-sm font-medium transition">
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {delUserId !== null && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center">
-            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">Delete User?</h2>
-            <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
-            <div className="flex gap-3">
-              <button onClick={handleDelete}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-medium transition">
-                Delete
+            <div className="flex gap-3 pt-2">
+              <button type="submit" disabled={saving}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 transition">
+                {saving ? 'Creating...' : 'Create User'}
               </button>
-              <button onClick={() => setDelUserId(null)}
-                className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2.5 rounded-lg text-sm font-medium transition">
+              <button type="button" onClick={() => setShowCreate(false)}
+                className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Reset password modal */}
+      {resetUserId && (
+        <Modal title="Reset Password" onClose={() => setResetUserId(null)}>
+          <div className="space-y-4">
+            <Input label="New Password" type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Min 8 characters" />
+            <Input label="Confirm Password" type="password" value={cfPw} onChange={e => setCfPw(e.target.value)} placeholder="Repeat new password" />
+            <div className="flex gap-3 pt-2">
+              <button onClick={handleResetPassword} disabled={resetting}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 transition">
+                {resetting ? 'Resetting...' : 'Reset Password'}
+              </button>
+              <button onClick={() => setResetUserId(null)}
+                className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition">
                 Cancel
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
+      )}
+
+      {/* Delete confirm modal */}
+      {delUserId && (
+        <Modal title="Delete User" onClose={() => setDelUserId(null)}>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">Are you sure you want to delete this user? This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={handleDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-sm font-semibold transition">
+                Delete User
+              </button>
+              <button onClick={() => setDelUserId(null)}
+                className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

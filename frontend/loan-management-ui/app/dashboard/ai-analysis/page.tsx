@@ -120,7 +120,7 @@ LOAN PORTFOLIO DATA:
     <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-xl font-bold text-gray-900">AI Portfolio Analysis</h1>
-        <p className="text-sm text-gray-500">Powered by AI — get deep insights into your loan portfolio</p>
+        <p className="text-sm text-gray-500">Powered by Claude — get deep insights into your loan portfolio</p>
       </div>
 
       {/* Portfolio snapshot */}

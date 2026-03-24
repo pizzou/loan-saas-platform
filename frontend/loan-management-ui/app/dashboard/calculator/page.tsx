@@ -13,7 +13,7 @@ export default function CalculatorPage() {
 
   const calculate = () => {
     const P = parseFloat(amount);
-    const r = parseFloat(rate) / 100 / 12;
+    const r = parseFloat(rate) / 100 ;
     const n = parseInt(duration);
     if (!P || !r || !n || P <= 0 || r <= 0 || n <= 0) return;
 

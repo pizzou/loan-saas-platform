@@ -2,7 +2,7 @@ package com.patrick.fintech.loan_backend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "audit_logs")
@@ -19,7 +19,7 @@ public class Audit {
     private String entityName;
     private Long entityId;
 
-    private LocalDateTime timestamp;
+    private OffsetDateTime timestamp;
 
     private String ipAddress;
     private String userAgent;
@@ -30,9 +30,4 @@ public class Audit {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private User user;
-
-    @PrePersist
-    public void prePersist() {
-        this.timestamp = LocalDateTime.now();
-    }
 }

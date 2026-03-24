@@ -14,6 +14,9 @@ public class User {
     private String name;
     private String email;
     private String password;
+    @Column(length = 50)
+  private String timezone; // e.g., "Africa/Kigali", "Europe/London"
+
 
     @ManyToOne
     @JoinColumn(name = "role_id")

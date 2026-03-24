@@ -12,6 +12,9 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+
 @Aspect
 @Component
 @RequiredArgsConstructor
@@ -29,12 +32,16 @@ public class AuditAspect {
 
             Long entityId = null;
 
-            // Attempt to extract the ID of the saved/returned entity
+            // Extract ID if result entity has getId()
             if (result != null) {
                 try {
                     entityId = (Long) result.getClass().getMethod("getId").invoke(result);
                 } catch (Exception ignored) {}
             }
+
+            // Get timezone from header, fallback to server default
+            String tzHeader = request.getHeader("X-Timezone");
+            ZoneId zone = (tzHeader != null) ? ZoneId.of(tzHeader) : ZoneId.systemDefault();
 
             Audit audit = new Audit();
             audit.setAction(auditable.action());
@@ -43,6 +50,7 @@ public class AuditAspect {
             audit.setUser(currentUser);
             audit.setIpAddress(request.getRemoteAddr());
             audit.setUserAgent(request.getHeader("User-Agent"));
+            audit.setTimestamp(OffsetDateTime.now(zone));  // ✅ timezone-aware timestamp
 
             auditService.logAction(audit);
 

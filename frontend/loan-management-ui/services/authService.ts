@@ -2,15 +2,23 @@ import { post } from './api';
 import { AuthResponse } from '../types/index';
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  // post() already unwraps ApiResponse.data, so we get the inner object directly
+  // post() already unwraps ApiResponse.data
   const data = await post('/auth/login', { email, password }) as AuthResponse;
+
   if (typeof window !== 'undefined') {
+    // Capture browser timezone
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Save token and user info + timezone
     localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data));
+    localStorage.setItem('user', JSON.stringify({ ...data, timezone }));
+
     document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
   }
+
   return data;
 }
+
 
 export function logout() {
   if (typeof window !== 'undefined') {

@@ -8,4 +8,4 @@ export const getAllPayments      = (): Promise<Payment[]> =>
 export const getOverduePayments = (): Promise<Payment[]> =>
   get('/payments/overdue') as Promise<Payment[]>;
 export const makePayment        = (id: number, amount: number, method: string, txId?: string): Promise<Payment> =>
-  post(`/payments/pay/${id}`, { paymentMethod: method, transactionId: txId }) as Promise<Payment>;
+  post(`/payments/pay/${id}`, { amount, paymentMethod: method, transactionId: txId ?? null }) as Promise<Payment>;
